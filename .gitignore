@@ -1,0 +1,34 @@
+# OS Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Backups
+*.backup
+*.bak
+hatchery-manager.html.backup
+
+# Node (if ever needed for build tools)
+node_modules/
+npm-debug.log
+package-lock.json
+yarn.lock
+
+# OS Specific
+.AppleDouble
+.LSOverride
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+# Local development
+*.log
+.env
+.env.local

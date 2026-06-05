@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+Hatchery Manager
+Copyright (c) 2026 Derek Jinishian
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+GitHub: https://github.com/your-username/hatchery-manager
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hatchery Manager - Invoicing & Bookkeeping</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8B6F47;
+            --secondary: #D4A574;
+            --accent: #E8D5C4;
+            --dark: #3D3D3D;
+            --light: #F5F1EB;
+            --success: #6B9080;
+            --danger: #C17070;
+            --border: #D4C5B9;
+            --text: #2C2C2C;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #FAF7F3 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(139, 111, 71, 0.15);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            opacity: 0.95;
+            font-size: 1.1em;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #7A5E3D;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(139, 111, 71, 0.2);
+        }
+
+        .btn-secondary {
+            background: var(--accent);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: #D4A574;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger:hover {
+            background: #A85E5E;
+        }
+
+        .btn-export {
+            background: var(--success);
+            color: white;
+            margin-right: 10px;
+        }
+
+        .btn-export:hover {
+            background: #5A7D6E;
+        }
+
+        /* Cards & Tables */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border-left: 5px solid var(--primary);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 1.5em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background: var(--accent);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: #FAFAF8;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Messages */
+        .success-msg {
+            background: #E8F5E9;
+            border-left: 4px solid var(--success);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-msg.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .text-success {
+            color: var(--success);
+        }
+
+        .text-danger {
+            color: var(--danger);
+        }
+
+        /* Theme Selector */
+        .theme-selector {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 500;
+        }
+
+        .theme-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.2em;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-panel {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            max-width: 300px;
+            z-index: 499;
+        }
+
+        .theme-panel.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .theme-panel h4 {
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-size: 1.1em;
+        }
+
+        .theme-options {
+            margin-bottom: 20px;
+        }
+
+        .theme-option {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .color-preview {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .color-preview:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-preview.active {
+            border-color: var(--primary);
+            background: rgba(139, 111, 71, 0.05);
+        }
+
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .color-swatch-text {
+            font-size: 0.85em;
+            color: #666;
+            flex: 1;
+        }
+
+        .custom-theme {
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        .custom-theme label {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .color-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        input[type="color"]:hover {
+            border-color: var(--primary);
+        }
+
+        /* Calendar */
+        .calendar-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 1024px) {
+            .calendar-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-header button {
+            padding: 8px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .calendar-day-header {
+            font-weight: 600;
+            text-align: center;
+            padding: 10px;
+            background: var(--accent);
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            padding: 8px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            transition: all 0.2s ease;
+            background: white;
+            font-size: 0.9em;
+        }
+
+        .calendar-day:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.1);
+        }
+
+        .calendar-day.selected {
+            background: var(--accent);
+            border-color: var(--primary);
+        }
+
+        .calendar-day.other-month {
+            color: #ccc;
+            background: #f9f9f9;
+        }
+
+        .calendar-day-number {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .calendar-event-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            margin-top: 2px;
+        }
+
+        .events-list {
+            border-left: 5px solid var(--primary);
+            padding-left: 20px;
+        }
+
+        .event-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .event-date {
+            font-size: 0.85em;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .event-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .event-type.hatch {
+            background: #FFF3CD;
+            color: #856404;
+        }
+
+        .event-type.breed {
+            background: #E7F3FF;
+            color: #004085;
+        }
+
+        .event-type.task {
+            background: #D4EDDA;
+            color: #155724;
+        }
+
+        /* Production Tracking */
+        .production-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .production-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .production-card h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .production-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .production-form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border-left: 5px solid var(--primary);
+        }
+
+        .chart-container h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            max-height: 300px;
+        }
+
+        /* Analytics Grid */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .analytics-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .analytics-card.cost-breakdown {
+            border-left-color: var(--danger);
+        }
+
+        .analytics-card.production {
+            border-left-color: var(--success);
+        }
+
+        .analytics-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .analytics-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .analytics-card.cost-breakdown .analytics-value {
+            color: var(--danger);
+        }
+
+        .analytics-card.production .analytics-value {
+            color: var(--success);
+        }
+
+        .analytics-subtext {
+            font-size: 0.85em;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        .close-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-panel:hover {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🐔 Hatchery Manager</h1>
+            <p>Professional invoicing, bookkeeping & inventory tracking</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('inventory')">Inventory</button>
+            <button class="tab-btn" onclick="switchTab('invoicing')">Invoicing</button>
+            <button class="tab-btn" onclick="switchTab('bookkeeping')">Bookkeeping</button>
+            <button class="tab-btn" onclick="switchTab('production')">Production</button>
+            <button class="tab-btn" onclick="switchTab('calendar')">Calendar</button>
+            <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+        </div>
+
+        <!-- Success Message -->
+        <div class="success-msg" id="successMsg"></div>
+
+        <!-- INVENTORY TAB -->
+        <div id="inventory" class="tab-content active">
+            <div class="card">
+                <h2>Add Birds/Inventory</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Item Type</label>
+                        <select id="itemType">
+                            <option value="">Select Type</option>
+                            <option value="Chicks - Chickens">Chicks - Chickens</option>
+                            <option value="Chicks - Quail">Chicks - Quail</option>
+                            <option value="Hatching Eggs - Chickens">Hatching Eggs - Chickens</option>
+                            <option value="Hatching Eggs - Quail">Hatching Eggs - Quail</option>
+                            <option value="Adult Birds - Chickens">Adult Birds - Chickens</option>
+                            <option value="Adult Birds - Quail">Adult Birds - Quail</option>
+                            <option value="Feed">Feed</option>
+                            <option value="Supplies">Supplies</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Breed/Variety</label>
+                        <input type="text" id="breed" placeholder="e.g., Rhode Island Red">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="quantity" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Unit Cost ($)</label>
+                        <input type="number" id="unitCost" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Date Added</label>
+                    <input type="date" id="dateAdded">
+                </div>
+                <button class="btn btn-primary" onclick="addInventory()">Add to Inventory</button>
+            </div>
+
+            <div class="card">
+                <h2>Current Inventory</h2>
+                <div id="inventoryList"></div>
+            </div>
+        </div>
+
+        <!-- INVOICING TAB -->
+        <div id="invoicing" class="tab-content">
+            <div class="card">
+                <h2>Create Invoice</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Customer Name</label>
+                        <input type="text" id="customerName" placeholder="Customer name">
+                    </div>
+                    <div class="form-group">
+                        <label>Invoice Date</label>
+                        <input type="date" id="invoiceDate">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Item Description</label>
+                        <input type="text" id="itemDesc" placeholder="e.g., 10 Rhode Island Red Chicks">
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="invoiceQty" placeholder="0" min="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Unit Price ($)</label>
+                        <input type="number" id="unitPrice" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Tax (%)</label>
+                        <input type="number" id="taxRate" placeholder="0" step="0.1" min="0" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="invoiceNotes" placeholder="Special instructions or notes..." rows="3"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="createInvoice()">Create Invoice</button>
+            </div>
+
+            <div class="card">
+                <h2>Invoices</h2>
+                <div id="invoicesList"></div>
+            </div>
+        </div>
+
+        <!-- PRODUCTION TAB -->
+        <div id="production" class="tab-content">
+            <div class="card">
+                <h2>Track Hatch Cycles</h2>
+                <div class="production-grid">
+                    <div class="production-card">
+                        <h3>🐣 Record Hatch Cycle</h3>
+                        <div class="production-form-row">
+                            <div class="form-group">
+                                <label>Breed</label>
+                                <input type="text" id="prodBreed" placeholder="e.g., Rhode Island Red">
+                            </div>
+                            <div class="form-group">
+                                <label>Species</label>
+                                <select id="prodSpecies">
+                                    <option value="Chicken">Chicken</option>
+                                    <option value="Quail">Quail</option>
+                                    <option value="Duck">Duck</option>
+                                    <option value="Goose">Goose</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="production-form-row">
+                            <div class="form-group">
+                                <label>Eggs Set</label>
+                                <input type="number" id="eggsSet" placeholder="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Date Set</label>
+                                <input type="date" id="dateSet">
+                            </div>
+                        </div>
+                        <div class="production-form-row">
+                            <div class="form-group">
+                                <label>Expected Hatch Date</label>
+                                <input type="date" id="expectedHatchDate">
+                            </div>
+                            <div class="form-group">
+                                <label>Chicks Hatched</label>
+                                <input type="number" id="chicksHatched" placeholder="0" min="0">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="recordHatchCycle()">Log Hatch Cycle</button>
+                    </div>
+
+                    <div class="production-card">
+                        <h3>💰 Production Costs</h3>
+                        <div class="production-form-row full">
+                            <div class="form-group">
+                                <label>Feed Cost (for this cycle)</label>
+                                <input type="number" id="feedCost" placeholder="0.00" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="production-form-row full">
+                            <div class="form-group">
+                                <label>Other Costs (heating, electricity, etc.)</label>
+                                <input type="number" id="otherCosts" placeholder="0.00" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="production-form-row full">
+                            <div class="form-group">
+                                <label>Sale Price Per Chick</label>
+                                <input type="number" id="pricePerChick" placeholder="0.00" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="recordProductionCosts()">Save Costs</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Production History</h2>
+                <div id="productionList"></div>
+            </div>
+        </div>
+
+        <!-- CALENDAR TAB -->
+        <div id="calendar" class="tab-content">
+            <div class="card">
+                <h2>Breeding & Task Calendar</h2>
+                <div class="production-grid">
+                    <div class="production-card">
+                        <h3>📅 Add Event</h3>
+                        <div class="production-form-row">
+                            <div class="form-group">
+                                <label>Event Type</label>
+                                <select id="eventType">
+                                    <option value="hatch">Hatch Date</option>
+                                    <option value="breed">Breeding Cycle</option>
+                                    <option value="task">Task/Reminder</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" id="eventDate">
+                            </div>
+                        </div>
+                        <div class="production-form-row full">
+                            <div class="form-group">
+                                <label>Title</label>
+                                <input type="text" id="eventTitle" placeholder="e.g., Hatch RIR batch #3">
+                            </div>
+                        </div>
+                        <div class="production-form-row full">
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <textarea id="eventNotes" placeholder="Additional details..." rows="2"></textarea>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="addCalendarEvent()">Add Event</button>
+                    </div>
+                </div>
+
+                <div class="calendar-container">
+                    <div>
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                            <div class="calendar-header">
+                                <button onclick="previousMonth()">← Prev</button>
+                                <h3 id="currentMonth" style="margin: 0;">Month</h3>
+                                <button onclick="nextMonth()">Next →</button>
+                            </div>
+                            <div class="calendar-grid" id="calendarGrid"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 15px; color: var(--primary);">Events</h3>
+                        <div class="events-list" id="eventsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYTICS TAB -->
+        <div id="analytics" class="tab-content">
+            <div class="card">
+                <h2>Production Analytics</h2>
+                <div class="analytics-grid" id="analyticsGrid"></div>
+            </div>
+
+            <div class="card">
+                <h2>Hatch Success Rate</h2>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="hatchSuccessChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Cost Per Chick by Breed</h2>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="costPerChickChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Revenue vs Costs</h2>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="revenueCostsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Export Analytics</h2>
+                <p style="margin-bottom: 20px; color: #666;">Export production and cost data</p>
+                <div class="btn-group">
+                    <button class="btn btn-export" onclick="exportToCSV('production')">Export Production Data (CSV)</button>
+                    <button class="btn btn-export" onclick="exportToCSV('events')">Export Calendar (CSV)</button>
+                </div>
+            </div>
+        </div>
+            <div class="card">
+                <h2>Record Transaction</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="transType">
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="category">
+                            <option value="Sales">Sales</option>
+                            <option value="Feed">Feed</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Equipment">Equipment</option>
+                            <option value="Labor">Labor</option>
+                            <option value="Veterinary">Veterinary</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Amount ($)</label>
+                        <input type="number" id="transAmount" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="transDate">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="transDesc" placeholder="Description of transaction">
+                </div>
+                <button class="btn btn-primary" onclick="addTransaction()">Record Transaction</button>
+            </div>
+
+            <div class="card">
+                <h2>Transaction History</h2>
+                <div id="transactionsList"></div>
+            </div>
+        </div>
+
+        <!-- REPORTS TAB -->
+        <div id="reports" class="tab-content">
+            <div class="card">
+                <h2>Financial Summary</h2>
+                <div class="stats-grid" id="statsGrid"></div>
+            </div>
+
+            <div class="card">
+                <h2>Profit & Loss Statement</h2>
+                <div id="plStatement"></div>
+            </div>
+
+            <div class="card">
+                <h2>Export Data</h2>
+                <p style="margin-bottom: 20px; color: #666;">Export your data for analysis or backup</p>
+                <div class="btn-group">
+                    <button class="btn btn-export" onclick="exportToCSV('inventory')">Export Inventory (CSV)</button>
+                    <button class="btn btn-export" onclick="exportToCSV('invoices')">Export Invoices (CSV)</button>
+                    <button class="btn btn-export" onclick="exportToCSV('transactions')">Export Transactions (CSV)</button>
+                    <button class="btn btn-secondary" onclick="clearAllData()">Clear All Data (Backup First!)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3 id="editTitle">Edit Item</h3>
+            <div id="editForm"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Selector -->
+    <div class="theme-selector">
+        <button class="theme-btn" onclick="toggleThemePanel()" title="Change Theme">🎨</button>
+        <div id="themePanel" class="theme-panel">
+            <button class="close-panel" onclick="toggleThemePanel()">✕</button>
+            <h4>Select Theme</h4>
+            
+            <div class="theme-options" id="themeOptions"></div>
+            
+            <div class="custom-theme">
+                <label>Custom Primary Color</label>
+                <div class="color-input-group">
+                    <input type="color" id="primaryColor" value="#8B6F47" onchange="applyCustomTheme()">
+                    <span id="colorValue">#8B6F47</span>
+                </div>
+                <button class="btn btn-secondary" onclick="applyCustomTheme()" style="width: 100%; margin-top: 10px;">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme definitions
+        const themes = {
+            'Earthy': {
+                primary: '#8B6F47',
+                secondary: '#D4A574',
+                accent: '#E8D5C4',
+                success: '#6B9080',
+                danger: '#C17070'
+            },
+            'Ocean': {
+                primary: '#2C5282',
+                secondary: '#4299E1',
+                accent: '#BEE3F8',
+                success: '#38A169',
+                danger: '#E53E3E'
+            },
+            'Forest': {
+                primary: '#22543D',
+                secondary: '#48BB78',
+                accent: '#C6F6D5',
+                success: '#38A169',
+                danger: '#C53030'
+            },
+            'Sunset': {
+                primary: '#C05621',
+                secondary: '#ED8936',
+                accent: '#FBD38D',
+                success: '#38A169',
+                danger: '#E53E3E'
+            },
+            'Berry': {
+                primary: '#6B2D5C',
+                secondary: '#9F7AEA',
+                accent: '#E9D8FD',
+                success: '#38A169',
+                danger: '#E53E3E'
+            },
+            'Slate': {
+                primary: '#2D3748',
+                secondary: '#4A5568',
+                accent: '#CBD5E0',
+                success: '#38A169',
+                danger: '#E53E3E'
+            },
+            'Mint': {
+                primary: '#047857',
+                secondary: '#10B981',
+                accent: '#D1FAE5',
+                success: '#059669',
+                danger: '#DC2626'
+            }
+        };
+
+        // Load theme from localStorage
+        function loadTheme() {
+            try {
+                const saved = localStorage.getItem('hatcheryTheme');
+                if (saved) {
+                    const theme = JSON.parse(saved);
+                    applyTheme(theme);
+                }
+                // Render theme options if element exists
+                const themeOptions = document.getElementById('themeOptions');
+                if (themeOptions) {
+                    renderThemeOptions();
+                }
+            } catch (e) {
+                console.warn('Theme initialization error:', e);
+            }
+        }
+
+        // Render theme options
+        function renderThemeOptions() {
+            try {
+                const container = document.getElementById('themeOptions');
+                if (!container) return; // Theme panel not loaded
+                
+                let html = '';
+                
+                Object.entries(themes).forEach(([name, colors]) => {
+                    const isActive = JSON.stringify(colors) === JSON.stringify(getCurrentTheme()) ? 'active' : '';
+                    html += `
+                        <div class="color-preview ${isActive}" onclick="selectTheme('${name}')">
+                            <div class="color-swatch" style="background: ${colors.primary}; box-shadow: inset 0 0 0 2px ${colors.secondary};"></div>
+                            <div class="color-swatch-text">${name}</div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch (e) {
+                console.warn('Render theme options error:', e);
+            }
+        }
+
+        // Get current theme colors
+        function getCurrentTheme() {
+            const root = document.documentElement;
+            return {
+                primary: getComputedStyle(root).getPropertyValue('--primary').trim(),
+                secondary: getComputedStyle(root).getPropertyValue('--secondary').trim(),
+                accent: getComputedStyle(root).getPropertyValue('--accent').trim(),
+                success: getComputedStyle(root).getPropertyValue('--success').trim(),
+                danger: getComputedStyle(root).getPropertyValue('--danger').trim()
+            };
+        }
+
+        // Select a pre-built theme
+        function selectTheme(themeName) {
+            try {
+                if (!themes[themeName]) return;
+                const theme = themes[themeName];
+                applyTheme(theme);
+                localStorage.setItem('hatcheryTheme', JSON.stringify(theme));
+                const themeOptions = document.getElementById('themeOptions');
+                if (themeOptions) {
+                    renderThemeOptions();
+                }
+                showMessage(`Theme changed to ${themeName}!`);
+            } catch (e) {
+                console.warn('Select theme error:', e);
+            }
+        }
+
+        // Apply theme colors
+        function applyTheme(colors) {
+            try {
+                if (!colors || !colors.primary) return;
+                const root = document.documentElement;
+                root.style.setProperty('--primary', colors.primary);
+                root.style.setProperty('--secondary', colors.secondary || colors.primary);
+                root.style.setProperty('--accent', colors.accent || colors.primary);
+                if (colors.success) root.style.setProperty('--success', colors.success);
+                if (colors.danger) root.style.setProperty('--danger', colors.danger);
+            } catch (e) {
+                console.warn('Apply theme error:', e);
+            }
+        }
+
+        // Apply custom theme
+        function applyCustomTheme() {
+            try {
+                const colorInput = document.getElementById('primaryColor');
+                const colorValue = document.getElementById('colorValue');
+                if (!colorInput || !colorValue) return;
+                
+                const color = colorInput.value;
+                colorValue.textContent = color;
+                
+                // Generate complementary colors from primary
+                const customTheme = {
+                    primary: color,
+                    secondary: adjustBrightness(color, 30),
+                    accent: adjustBrightness(color, 60),
+                    success: '#6B9080',
+                    danger: '#C17070'
+                };
+                
+                applyTheme(customTheme);
+                localStorage.setItem('hatcheryTheme', JSON.stringify(customTheme));
+                renderThemeOptions();
+                showMessage('Custom theme applied!');
+            } catch (e) {
+                console.warn('Custom theme error:', e);
+            }
+        }
+
+        // Helper function to adjust color brightness
+        function adjustBrightness(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255))
+                .toString(16).slice(1);
+        }
+
+        // Toggle theme panel
+        function toggleThemePanel() {
+            try {
+                const panel = document.getElementById('themePanel');
+                if (panel) {
+                    panel.classList.toggle('show');
+                }
+            } catch (e) {
+                console.warn('Theme panel error:', e);
+            }
+        }
+
+        // Close panel when clicking outside
+        document.addEventListener('click', function(event) {
+            const panel = document.getElementById('themePanel');
+            const themeBtn = document.querySelector('.theme-btn');
+            if (panel && !panel.contains(event.target) && !themeBtn.contains(event.target)) {
+                panel.classList.remove('show');
+            }
+        });
+
+        // Data Storage
+        let data = {
+            inventory: [],
+            invoices: [],
+            transactions: [],
+            production: [],
+            calendarEvents: []
+        };
+
+        // Calendar state
+        let currentDate = new Date();
+
+        // Load data from localStorage
+        function loadData() {
+            const saved = localStorage.getItem('hatcheryData');
+            if (saved) data = JSON.parse(saved);
+            
+            // Safely set date inputs only if they exist
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                if (document.getElementById('invoiceDate')) document.getElementById('invoiceDate').value = today;
+                if (document.getElementById('dateAdded')) document.getElementById('dateAdded').value = today;
+                if (document.getElementById('transDate')) document.getElementById('transDate').value = today;
+                if (document.getElementById('dateSet')) document.getElementById('dateSet').value = today;
+                if (document.getElementById('eventDate')) document.getElementById('eventDate').value = today;
+            } catch (e) {
+                console.log('Date inputs not ready');
+            }
+            
+            // Render calendar and production data if elements exist
+            if (document.getElementById('calendarGrid')) {
+                renderCalendar();
+            }
+            if (document.getElementById('productionList')) {
+                displayProduction();
+            }
+        }
+
+        // Production tracking functions
+        function recordHatchCycle() {
+            const breed = document.getElementById('prodBreed').value;
+            const species = document.getElementById('prodSpecies').value;
+            const eggsSet = parseInt(document.getElementById('eggsSet').value) || 0;
+            const dateSet = document.getElementById('dateSet').value;
+            const expectedHatchDate = document.getElementById('expectedHatchDate').value;
+            const chicksHatched = parseInt(document.getElementById('chicksHatched').value) || 0;
+
+            if (!breed || eggsSet <= 0 || !dateSet) {
+                alert('Please fill in required fields');
+                return;
+            }
+
+            const hatchRate = eggsSet > 0 ? ((chicksHatched / eggsSet) * 100).toFixed(1) : 0;
+
+            const cycle = {
+                id: Date.now(),
+                breed,
+                species,
+                eggsSet,
+                dateSet,
+                expectedHatchDate,
+                chicksHatched,
+                hatchRate,
+                feedCost: 0,
+                otherCosts: 0,
+                pricePerChick: 0
+            };
+
+            data.production.push(cycle);
+            saveData();
+            showMessage('Hatch cycle recorded!');
+
+            document.getElementById('prodBreed').value = '';
+            document.getElementById('eggsSet').value = '';
+            document.getElementById('chicksHatched').value = '';
+
+            displayProduction();
+        }
+
+        function recordProductionCosts() {
+            if (data.production.length === 0) {
+                alert('Please record a hatch cycle first');
+                return;
+            }
+
+            const latestCycle = data.production[data.production.length - 1];
+            latestCycle.feedCost = parseFloat(document.getElementById('feedCost').value) || 0;
+            latestCycle.otherCosts = parseFloat(document.getElementById('otherCosts').value) || 0;
+            latestCycle.pricePerChick = parseFloat(document.getElementById('pricePerChick').value) || 0;
+
+            const totalCost = latestCycle.feedCost + latestCycle.otherCosts;
+            latestCycle.costPerChick = latestCycle.chicksHatched > 0 ? (totalCost / latestCycle.chicksHatched).toFixed(2) : 0;
+
+            saveData();
+            showMessage('Production costs recorded!');
+            displayProduction();
+        }
+
+        function displayProduction() {
+            const list = document.getElementById('productionList');
+            if (data.production.length === 0) {
+                list.innerHTML = '<p style="color: #999;">No production cycles recorded yet.</p>';
+                return;
+            }
+
+            let html = '<table><tr><th>Breed</th><th>Species</th><th>Eggs Set</th><th>Hatched</th><th>Success %</th><th>Cost/Chick</th><th>Date Set</th><th>Actions</th></tr>';
+            data.production.forEach(cycle => {
+                html += `<tr>
+                    <td>${cycle.breed}</td>
+                    <td>${cycle.species}</td>
+                    <td>${cycle.eggsSet}</td>
+                    <td>${cycle.chicksHatched}</td>
+                    <td><strong>${cycle.hatchRate}%</strong></td>
+                    <td>${cycle.costPerChick ? '$' + cycle.costPerChick : '-'}</td>
+                    <td>${cycle.dateSet}</td>
+                    <td><button class="btn btn-danger" onclick="deleteProduction(${cycle.id})">Delete</button></td>
+                </tr>`;
+            });
+            html += '</table>';
+            list.innerHTML = html;
+        }
+
+        function deleteProduction(id) {
+            data.production = data.production.filter(p => p.id !== id);
+            saveData();
+            displayProduction();
+            showMessage('Production cycle deleted');
+        }
+
+        // Calendar functions
+        function renderCalendar() {
+            try {
+                const gridElement = document.getElementById('calendarGrid');
+                if (!gridElement) return; // Calendar tab not loaded yet
+                
+                const month = currentDate.getMonth();
+                const year = currentDate.getFullYear();
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const prevLastDay = new Date(year, month, 0);
+
+                const daysInMonth = lastDay.getDate();
+                const daysInPrevMonth = prevLastDay.getDate();
+                const startingDayOfWeek = firstDay.getDay();
+
+                const monthElement = document.getElementById('currentMonth');
+                if (monthElement) {
+                    monthElement.textContent = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                }
+
+                let html = '<div class="calendar-day-header">Sun</div>';
+                html += '<div class="calendar-day-header">Mon</div>';
+                html += '<div class="calendar-day-header">Tue</div>';
+                html += '<div class="calendar-day-header">Wed</div>';
+                html += '<div class="calendar-day-header">Thu</div>';
+                html += '<div class="calendar-day-header">Fri</div>';
+                html += '<div class="calendar-day-header">Sat</div>';
+
+                for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                    html += `<div class="calendar-day other-month">${daysInPrevMonth - i}</div>`;
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const eventsForDay = data.calendarEvents.filter(e => e.date === dateStr);
+                    const hasEvents = eventsForDay.length > 0;
+
+                    html += `<div class="calendar-day ${hasEvents ? 'selected' : ''}" onclick="selectDate('${dateStr}')">
+                        <div class="calendar-day-number">${day}</div>
+                        ${hasEvents ? '<div class="calendar-event-dot"></div>' : ''}
+                    </div>`;
+                }
+
+                const remainingCells = 42 - (startingDayOfWeek + daysInMonth);
+                for (let day = 1; day <= remainingCells; day++) {
+                    html += `<div class="calendar-day other-month">${day}</div>`;
+                }
+
+                gridElement.innerHTML = html;
+                displayCalendarEvents();
+            } catch (e) {
+                console.error('Calendar render error:', e);
+            }
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function selectDate(dateStr) {
+            document.getElementById('eventDate').value = dateStr;
+        }
+
+        function addCalendarEvent() {
+            const eventType = document.getElementById('eventType').value;
+            const eventDate = document.getElementById('eventDate').value;
+            const eventTitle = document.getElementById('eventTitle').value;
+            const eventNotes = document.getElementById('eventNotes').value;
+
+            if (!eventDate || !eventTitle) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const event = {
+                id: Date.now(),
+                type: eventType,
+                date: eventDate,
+                title: eventTitle,
+                notes: eventNotes
+            };
+
+            data.calendarEvents.push(event);
+            saveData();
+            showMessage('Event added!');
+
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventNotes').value = '';
+
+            renderCalendar();
+        }
+
+        function displayCalendarEvents() {
+            try {
+                const eventsList = document.getElementById('eventsList');
+                if (!eventsList) return; // Element doesn't exist yet
+                
+                const upcomingEvents = [...data.calendarEvents]
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .slice(0, 10);
+
+                if (upcomingEvents.length === 0) {
+                    eventsList.innerHTML = '<p style="color: #999;">No events scheduled.</p>';
+                    return;
+                }
+
+                let html = '';
+                upcomingEvents.forEach(event => {
+                    const dateObj = new Date(event.date);
+                    const displayDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    html += `<div class="event-item">
+                        <div class="event-date">${displayDate}</div>
+                        <div class="event-type ${event.type}">${event.type.toUpperCase()}</div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">${event.title}</div>
+                        ${event.notes ? `<div style="font-size: 0.9em; color: #666;">${event.notes}</div>` : ''}
+                        <button class="btn btn-danger" onclick="deleteEvent(${event.id})" style="margin-top: 8px;">Delete</button>
+                    </div>`;
+                });
+                eventsList.innerHTML = html;
+            } catch (e) {
+                console.error('Display calendar events error:', e);
+            }
+        }
+
+        function deleteEvent(id) {
+            data.calendarEvents = data.calendarEvents.filter(e => e.id !== id);
+            saveData();
+            renderCalendar();
+            showMessage('Event deleted');
+        }
+
+        function updateAnalytics() {
+            try {
+                updateAnalyticsCards();
+                updateHatchSuccessChart();
+                updateCostPerChickChart();
+                updateRevenueCostsChart();
+            } catch (e) {
+                console.warn('Analytics update error:', e);
+            }
+        }
+
+        function updateAnalyticsCards() {
+            try {
+                const totalChicksHatched = data.production.reduce((sum, p) => sum + p.chicksHatched, 0);
+                const avgHatchRate = data.production.length > 0 
+                    ? (data.production.reduce((sum, p) => sum + parseFloat(p.hatchRate), 0) / data.production.length).toFixed(1)
+                    : 0;
+
+                const totalRevenue = data.invoices.reduce((sum, inv) => sum + inv.total, 0);
+                const totalCosts = data.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+                const totalProfit = totalRevenue - totalCosts;
+
+                let html = `
+                    <div class="analytics-card production">
+                        <div class="analytics-label">Total Chicks Hatched</div>
+                        <div class="analytics-value">${totalChicksHatched}</div>
+                        <div class="analytics-subtext">${data.production.length} cycles</div>
+                    </div>
+                    <div class="analytics-card">
+                        <div class="analytics-label">Avg Hatch Success Rate</div>
+                        <div class="analytics-value">${avgHatchRate}%</div>
+                    </div>
+                    <div class="analytics-card">
+                        <div class="analytics-label">Total Revenue</div>
+                        <div class="analytics-value" style="color: var(--success);">$${totalRevenue.toFixed(2)}</div>
+                    </div>
+                    <div class="analytics-card cost-breakdown">
+                        <div class="analytics-label">Total Costs</div>
+                        <div class="analytics-value">$${totalCosts.toFixed(2)}</div>
+                    </div>
+                    <div class="analytics-card">
+                        <div class="analytics-label">Net Profit</div>
+                        <div class="analytics-value" style="color: ${totalProfit >= 0 ? 'var(--success)' : 'var(--danger)'};">$${totalProfit.toFixed(2)}</div>
+                    </div>
+                `;
+
+                const grid = document.getElementById('analyticsGrid');
+                if (grid) grid.innerHTML = html;
+            } catch (e) {
+                console.warn('Analytics cards error:', e);
+            }
+        }
+
+        function updateHatchSuccessChart() {
+            try {
+                if (!window.Chart) {
+                    console.warn('Chart.js not loaded');
+                    return;
+                }
+                
+                const canvas = document.getElementById('hatchSuccessChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const labels = data.production.map((p, i) => `${p.breed} (${p.dateSet})`);
+                const successRates = data.production.map(p => parseFloat(p.hatchRate));
+
+                if (window.hatchSuccessChartInstance) {
+                    window.hatchSuccessChartInstance.destroy();
+                }
+
+                window.hatchSuccessChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Hatch Success Rate (%)',
+                            data: successRates,
+                            backgroundColor: '#6B9080',
+                            borderColor: '#5A7D6E',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true } },
+                        scales: { y: { beginAtZero: true, max: 100 } }
+                    }
+                });
+            } catch (e) {
+                console.warn('Hatch success chart error:', e);
+            }
+        }
+
+        function updateCostPerChickChart() {
+            try {
+                if (!window.Chart) {
+                    console.warn('Chart.js not loaded');
+                    return;
+                }
+                
+                const canvas = document.getElementById('costPerChickChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const cyclesWithCosts = data.production.filter(p => p.costPerChick);
+                const labels = cyclesWithCosts.map(p => p.breed);
+                const costs = cyclesWithCosts.map(p => parseFloat(p.costPerChick));
+
+                if (window.costPerChickChartInstance) {
+                    window.costPerChickChartInstance.destroy();
+                }
+
+                window.costPerChickChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: costs,
+                            backgroundColor: ['#8B6F47', '#D4A574', '#E8D5C4', '#A0826D', '#6B5644'],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            } catch (e) {
+                console.warn('Cost per chick chart error:', e);
+            }
+        }
+
+        function updateRevenueCostsChart() {
+            try {
+                if (!window.Chart) {
+                    console.warn('Chart.js not loaded');
+                    return;
+                }
+                
+                const canvas = document.getElementById('revenueCostsChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const totalRevenue = data.invoices.reduce((sum, inv) => sum + inv.total, 0);
+                const totalCosts = data.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+                if (window.revenueCostsChartInstance) {
+                    window.revenueCostsChartInstance.destroy();
+                }
+
+                window.revenueCostsChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total Revenue', 'Total Costs'],
+                        datasets: [{
+                            label: 'Amount ($)',
+                            data: [totalRevenue, totalCosts],
+                            backgroundColor: ['#6B9080', '#C17070'],
+                            borderColor: ['#5A7D6E', '#A85E5E'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            } catch (e) {
+                console.warn('Revenue costs chart error:', e);
+            }
+        }
+
+        
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('hatcheryData', JSON.stringify(data));
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'analytics') {
+                updateAnalytics();
+            }
+        }
+
+        // Inventory functions
+        function addInventory() {
+            const itemType = document.getElementById('itemType').value;
+            const breed = document.getElementById('breed').value;
+            const quantity = parseInt(document.getElementById('quantity').value) || 0;
+            const unitCost = parseFloat(document.getElementById('unitCost').value) || 0;
+            const dateAdded = document.getElementById('dateAdded').value;
+
+            if (!itemType || !breed || quantity <= 0) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                itemType,
+                breed,
+                quantity,
+                unitCost,
+                dateAdded,
+                totalValue: quantity * unitCost
+            };
+
+            data.inventory.push(item);
+            saveData();
+            showMessage('Inventory item added successfully!');
+            
+            document.getElementById('itemType').value = '';
+            document.getElementById('breed').value = '';
+            document.getElementById('quantity').value = '';
+            document.getElementById('unitCost').value = '';
+            
+            displayInventory();
+        }
+
+        function displayInventory() {
+            const list = document.getElementById('inventoryList');
+            if (data.inventory.length === 0) {
+                list.innerHTML = '<p style="color: #999;">No inventory items yet.</p>';
+                return;
+            }
+
+            let html = '<table><tr><th>Type</th><th>Breed</th><th>Qty</th><th>Unit Cost</th><th>Total Value</th><th>Date</th><th>Actions</th></tr>';
+            data.inventory.forEach(item => {
+                html += `<tr>
+                    <td>${item.itemType}</td>
+                    <td>${item.breed}</td>
+                    <td>${item.quantity}</td>
+                    <td>$${item.unitCost.toFixed(2)}</td>
+                    <td><strong>$${item.totalValue.toFixed(2)}</strong></td>
+                    <td>${item.dateAdded}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteInventory(${item.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</table>';
+            list.innerHTML = html;
+        }
+
+        function deleteInventory(id) {
+            data.inventory = data.inventory.filter(item => item.id !== id);
+            saveData();
+            displayInventory();
+            showMessage('Item deleted');
+        }
+
+        // Invoicing functions
+        function createInvoice() {
+            const customerName = document.getElementById('customerName').value;
+            const invoiceDate = document.getElementById('invoiceDate').value;
+            const itemDesc = document.getElementById('itemDesc').value;
+            const invoiceQty = parseInt(document.getElementById('invoiceQty').value) || 0;
+            const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+            const notes = document.getElementById('invoiceNotes').value;
+
+            if (!customerName || !invoiceDate || !itemDesc || invoiceQty <= 0 || unitPrice <= 0) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const subtotal = invoiceQty * unitPrice;
+            const tax = subtotal * (taxRate / 100);
+            const total = subtotal + tax;
+
+            const invoice = {
+                id: Date.now(),
+                invoiceNumber: 'INV-' + Date.now().toString().slice(-6),
+                customerName,
+                invoiceDate,
+                itemDesc,
+                invoiceQty,
+                unitPrice,
+                subtotal,
+                taxRate,
+                tax,
+                total,
+                notes
+            };
+
+            data.invoices.push(invoice);
+            // Also record as income
+            data.transactions.push({
+                id: Date.now() + 1,
+                type: 'income',
+                category: 'Sales',
+                amount: total,
+                date: invoiceDate,
+                description: `Invoice ${invoice.invoiceNumber} - ${customerName}`
+            });
+            saveData();
+            showMessage('Invoice created successfully!');
+            
+            document.getElementById('customerName').value = '';
+            document.getElementById('itemDesc').value = '';
+            document.getElementById('invoiceQty').value = '';
+            document.getElementById('unitPrice').value = '';
+            document.getElementById('invoiceNotes').value = '';
+            
+            displayInvoices();
+        }
+
+        function displayInvoices() {
+            const list = document.getElementById('invoicesList');
+            if (data.invoices.length === 0) {
+                list.innerHTML = '<p style="color: #999;">No invoices yet.</p>';
+                return;
+            }
+
+            let html = '<table><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Actions</th></tr>';
+            data.invoices.forEach(inv => {
+                html += `<tr>
+                    <td><strong>${inv.invoiceNumber}</strong></td>
+                    <td>${inv.customerName}</td>
+                    <td>${inv.invoiceDate}</td>
+                    <td>${inv.itemDesc}</td>
+                    <td><strong>$${inv.total.toFixed(2)}</strong></td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="printInvoice(${inv.id})" style="padding: 6px 12px; font-size: 0.85em;">Print</button>
+                        <button class="btn btn-danger" onclick="deleteInvoice(${inv.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</table>';
+            list.innerHTML = html;
+        }
+
+        function deleteInvoice(id) {
+            data.invoices = data.invoices.filter(inv => inv.id !== id);
+            saveData();
+            displayInvoices();
+            showMessage('Invoice deleted');
+        }
+
+        function printInvoice(id) {
+            const invoice = data.invoices.find(inv => inv.id === id);
+            if (!invoice) return;
+
+            const printContent = `
+                <html>
+                <head>
+                    <title>Invoice ${invoice.invoiceNumber}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+                        .header { background: #8B6F47; color: white; padding: 20px; text-align: center; margin-bottom: 30px; }
+                        .invoice-details { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th { background: #f0f0f0; padding: 10px; text-align: left; border-bottom: 2px solid #333; }
+                        td { padding: 10px; border-bottom: 1px solid #ddd; }
+                        .total-row { font-weight: bold; font-size: 1.2em; background: #f9f9f9; }
+                        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 0.9em; color: #666; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>INVOICE</h1>
+                        <p>${invoice.invoiceNumber}</p>
+                    </div>
+                    <div class="invoice-details">
+                        <div>
+                            <h3>Bill To:</h3>
+                            <p><strong>${invoice.customerName}</strong></p>
+                        </div>
+                        <div>
+                            <p><strong>Invoice Date:</strong> ${invoice.invoiceDate}</p>
+                        </div>
+                    </div>
+                    <table>
+                        <tr>
+                            <th>Description</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Amount</th>
+                        </tr>
+                        <tr>
+                            <td>${invoice.itemDesc}</td>
+                            <td>${invoice.invoiceQty}</td>
+                            <td>$${invoice.unitPrice.toFixed(2)}</td>
+                            <td>$${invoice.subtotal.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"></td>
+                            <td><strong>Subtotal:</strong></td>
+                            <td>$${invoice.subtotal.toFixed(2)}</td>
+                        </tr>
+                        ${invoice.taxRate > 0 ? `<tr>
+                            <td colspan="2"></td>
+                            <td><strong>Tax (${invoice.taxRate}%):</strong></td>
+                            <td>$${invoice.tax.toFixed(2)}</td>
+                        </tr>` : ''}
+                        <tr class="total-row">
+                            <td colspan="2"></td>
+                            <td>TOTAL:</td>
+                            <td>$${invoice.total.toFixed(2)}</td>
+                        </tr>
+                    </table>
+                    ${invoice.notes ? `<div class="footer"><p><strong>Notes:</strong> ${invoice.notes}</p></div>` : ''}
+                </body>
+                </html>
+            `;
+
+            const printWindow = window.open('', '', 'width=800,height=600');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Bookkeeping functions
+        function addTransaction() {
+            const transType = document.getElementById('transType').value;
+            const category = document.getElementById('category').value;
+            const transAmount = parseFloat(document.getElementById('transAmount').value) || 0;
+            const transDate = document.getElementById('transDate').value;
+            const transDesc = document.getElementById('transDesc').value;
+
+            if (!transType || transAmount <= 0 || !transDate) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const transaction = {
+                id: Date.now(),
+                type: transType,
+                category,
+                amount: transAmount,
+                date: transDate,
+                description: transDesc
+            };
+
+            data.transactions.push(transaction);
+            saveData();
+            showMessage('Transaction recorded!');
+            
+            document.getElementById('transAmount').value = '';
+            document.getElementById('transDesc').value = '';
+            
+            displayTransactions();
+        }
+
+        function displayTransactions() {
+            const list = document.getElementById('transactionsList');
+            if (data.transactions.length === 0) {
+                list.innerHTML = '<p style="color: #999;">No transactions yet.</p>';
+                return;
+            }
+
+            let html = '<table><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Amount</th><th>Actions</th></tr>';
+            [...data.transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(trans => {
+                const amountClass = trans.type === 'income' ? 'text-success' : 'text-danger';
+                const sign = trans.type === 'income' ? '+' : '-';
+                html += `<tr>
+                    <td>${trans.date}</td>
+                    <td>${trans.type.charAt(0).toUpperCase() + trans.type.slice(1)}</td>
+                    <td>${trans.category}</td>
+                    <td>${trans.description}</td>
+                    <td class="${amountClass}"><strong>${sign}$${trans.amount.toFixed(2)}</strong></td>
+                    <td><button class="btn btn-danger" onclick="deleteTransaction(${trans.id})">Delete</button></td>
+                </tr>`;
+            });
+            html += '</table>';
+            list.innerHTML = html;
+        }
+
+        function deleteTransaction(id) {
+            data.transactions = data.transactions.filter(trans => trans.id !== id);
+            saveData();
+            displayTransactions();
+            showMessage('Transaction deleted');
+        }
+
+        // Reports
+        function updateReports() {
+            updateStats();
+            updatePLStatement();
+        }
+
+        function updateStats() {
+            const totalIncome = data.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const totalExpense = data.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            const netIncome = totalIncome - totalExpense;
+            const inventoryValue = data.inventory.reduce((sum, item) => sum + item.totalValue, 0);
+
+            const html = `
+                <div class="stat-box">
+                    <div class="stat-label">Total Income</div>
+                    <div class="stat-value text-success">$${totalIncome.toFixed(2)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Total Expenses</div>
+                    <div class="stat-value text-danger">$${totalExpense.toFixed(2)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Net Income</div>
+                    <div class="stat-value" style="color: ${netIncome >= 0 ? '#6B9080' : '#C17070'}">$${netIncome.toFixed(2)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Inventory Value</div>
+                    <div class="stat-value">$${inventoryValue.toFixed(2)}</div>
+                </div>
+            `;
+            document.getElementById('statsGrid').innerHTML = html;
+        }
+
+        function updatePLStatement() {
+            const byCategory = {
+                income: {},
+                expense: {}
+            };
+
+            data.transactions.forEach(trans => {
+                const key = byCategory[trans.type];
+                if (!key[trans.category]) {
+                    key[trans.category] = 0;
+                }
+                key[trans.category] += trans.amount;
+            });
+
+            let html = '<table><tr><th>Category</th><th>Amount</th></tr>';
+            html += '<tr style="background: #f0f0f0;"><td><strong>INCOME</strong></td><td></td></tr>';
+            
+            let incomeTotal = 0;
+            Object.entries(byCategory.income).forEach(([cat, amount]) => {
+                html += `<tr><td style="padding-left: 30px;">${cat}</td><td class="text-success">$${amount.toFixed(2)}</td></tr>`;
+                incomeTotal += amount;
+            });
+            html += `<tr style="background: #f9f9f9;"><td><strong>Total Income</strong></td><td class="text-success"><strong>$${incomeTotal.toFixed(2)}</strong></td></tr>`;
+
+            html += '<tr style="background: #f0f0f0; margin-top: 20px;"><td><strong>EXPENSES</strong></td><td></td></tr>';
+            
+            let expenseTotal = 0;
+            Object.entries(byCategory.expense).forEach(([cat, amount]) => {
+                html += `<tr><td style="padding-left: 30px;">${cat}</td><td class="text-danger">$${amount.toFixed(2)}</td></tr>`;
+                expenseTotal += amount;
+            });
+            html += `<tr style="background: #f9f9f9;"><td><strong>Total Expenses</strong></td><td class="text-danger"><strong>$${expenseTotal.toFixed(2)}</strong></td></tr>`;
+
+            const netIncome = incomeTotal - expenseTotal;
+            html += `<tr style="background: #E8D5C4; font-weight: bold;"><td>NET INCOME (LOSS)</td><td style="color: ${netIncome >= 0 ? '#6B9080' : '#C17070'}">$${netIncome.toFixed(2)}</td></tr>`;
+            html += '</table>';
+
+            document.getElementById('plStatement').innerHTML = html;
+        }
+
+        // Export functions
+        function exportToCSV(type) {
+            let data_to_export = [];
+            let headers = [];
+            let filename = '';
+
+            if (type === 'inventory') {
+                headers = ['Item Type', 'Breed', 'Quantity', 'Unit Cost', 'Total Value', 'Date Added'];
+                data_to_export = data.inventory.map(item => [
+                    item.itemType,
+                    item.breed,
+                    item.quantity,
+                    '$' + item.unitCost.toFixed(2),
+                    '$' + item.totalValue.toFixed(2),
+                    item.dateAdded
+                ]);
+                filename = 'inventory.csv';
+            } else if (type === 'invoices') {
+                headers = ['Invoice #', 'Customer', 'Date', 'Item Description', 'Qty', 'Unit Price', 'Subtotal', 'Tax', 'Total'];
+                data_to_export = data.invoices.map(inv => [
+                    inv.invoiceNumber,
+                    inv.customerName,
+                    inv.invoiceDate,
+                    inv.itemDesc,
+                    inv.invoiceQty,
+                    '$' + inv.unitPrice.toFixed(2),
+                    '$' + inv.subtotal.toFixed(2),
+                    '$' + inv.tax.toFixed(2),
+                    '$' + inv.total.toFixed(2)
+                ]);
+                filename = 'invoices.csv';
+            } else if (type === 'transactions') {
+                headers = ['Date', 'Type', 'Category', 'Description', 'Amount'];
+                data_to_export = data.transactions.map(trans => [
+                    trans.date,
+                    trans.type,
+                    trans.category,
+                    trans.description,
+                    (trans.type === 'income' ? '+' : '-') + '$' + trans.amount.toFixed(2)
+                ]);
+                filename = 'transactions.csv';
+            } else if (type === 'production') {
+                headers = ['Breed', 'Species', 'Eggs Set', 'Chicks Hatched', 'Success %', 'Feed Cost', 'Other Costs', 'Cost/Chick', 'Price/Chick', 'Date Set'];
+                data_to_export = data.production.map(p => [
+                    p.breed,
+                    p.species,
+                    p.eggsSet,
+                    p.chicksHatched,
+                    p.hatchRate + '%',
+                    '$' + p.feedCost.toFixed(2),
+                    '$' + p.otherCosts.toFixed(2),
+                    p.costPerChick ? '$' + p.costPerChick : '-',
+                    '$' + p.pricePerChick.toFixed(2),
+                    p.dateSet
+                ]);
+                filename = 'production.csv';
+            } else if (type === 'events') {
+                headers = ['Date', 'Type', 'Title', 'Notes'];
+                data_to_export = data.calendarEvents.map(e => [
+                    e.date,
+                    e.type,
+                    e.title,
+                    e.notes
+                ]);
+                filename = 'calendar-events.csv';
+
+            let csv = headers.join(',') + '\n';
+            data_to_export.forEach(row => {
+                csv += row.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showMessage('Data exported successfully!');
+        }
+
+        function clearAllData() {
+            if (confirm('WARNING: This will delete ALL data. Are you sure? Make sure to backup first!')) {
+                data = { inventory: [], invoices: [], transactions: [], production: [], calendarEvents: [] };
+                saveData();
+                displayInventory();
+                displayInvoices();
+                displayTransactions();
+                displayProduction();
+                renderCalendar();
+                showMessage('All data cleared');
+            }
+        }
+
+        // Utility functions
+        function showMessage(message) {
+            const msg = document.getElementById('successMsg');
+            msg.textContent = message;
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 3000);
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', function() {
+            try {
+                loadData();
+                displayInventory();
+                displayInvoices();
+                displayTransactions();
+                displayProduction();
+                if (document.getElementById('calendarGrid')) {
+                    renderCalendar();
+                }
+                // Load theme after everything else is ready
+                setTimeout(() => {
+                    try {
+                        loadTheme();
+                    } catch (e) {
+                        console.warn('Theme load error:', e);
+                    }
+                }, 50);
+            } catch (e) {
+                console.error('Initialization error:', e);
+            }
+        });
+        }
+    </script>
+</body>
+</html>
